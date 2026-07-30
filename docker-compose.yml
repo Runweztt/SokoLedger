@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: sokoledger
+      POSTGRES_PASSWORD: sokoledger
+      POSTGRES_DB: sokoledger
+    ports:
+      # Local-dev only. In production this port is never exposed publicly —
+      # see README "Data tier" for the real deployment's firewall rule.
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - sokoledger_pgdata:/var/lib/postgresql/data
+
+volumes:
+  sokoledger_pgdata:

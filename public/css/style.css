@@ -1,0 +1,615 @@
+/* SokoLedger — visual language: a trader's paper ledger and market
+   signboard, not a SaaS dashboard. Six tokens, no webfonts (deliberate —
+   the target users are on slow/costly connections, so nothing here is a
+   network request). */
+
+:root {
+  --ink: #202b22;
+  --paper: #e9dfc9;
+  --paper-deep: #ddd0b2;
+  --rule: #b9ab89;
+  --marigold: #d98e2b;
+  --teal: #2e6b5e;
+  --brick: #b5461f;
+  --paper-white: #f6f1e4;
+
+  --font-signboard: Rockwell, 'Roboto Slab', 'Bookman Old Style', Georgia, serif;
+  --font-ledger: ui-monospace, 'Courier New', Courier, monospace;
+  --font-body: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif;
+
+  --radius: 8px;
+  --shadow-card: 0 2px 0 var(--rule), 0 10px 20px -12px rgba(32, 43, 34, 0.45);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--ink);
+  background-color: var(--paper);
+  /* Fibrous paper grain via inline SVG turbulence — no image request. */
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0.13  0 0 0 0 0.17  0 0 0 0 0.13  0 0 0 0.05 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  min-height: 100vh;
+}
+
+a {
+  color: var(--teal);
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* ---------- Masthead: painted signboard, not a flat navbar ---------- */
+
+.masthead {
+  background: var(--ink);
+  color: var(--paper-white);
+  padding: 0.9rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  border-bottom: 4px solid var(--marigold);
+}
+
+.masthead .wordmark {
+  font-family: var(--font-signboard);
+  font-weight: 700;
+  font-size: 1.5rem;
+  letter-spacing: 0.02em;
+  color: var(--paper-white);
+  margin: 0;
+}
+
+.masthead .tagline {
+  font-size: 0.78rem;
+  color: var(--marigold);
+  margin: 0.1rem 0 0;
+  font-family: var(--font-ledger);
+}
+
+.masthead nav {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.masthead nav button {
+  background: transparent;
+  border: 1px solid rgba(246, 241, 228, 0.35);
+  color: var(--paper-white);
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+}
+
+.masthead nav button.active {
+  background: var(--marigold);
+  border-color: var(--marigold);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.masthead .who {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  color: var(--paper-white);
+}
+
+.masthead .who button {
+  background: transparent;
+  border: none;
+  color: var(--brick);
+  text-decoration: underline;
+  font-size: 0.85rem;
+}
+
+main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 4rem;
+}
+
+.view {
+  display: none;
+}
+
+.view.active {
+  display: block;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ---------- Ledger card: the physical-paper container ---------- */
+
+.ledger-card {
+  background: var(--paper-white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--rule);
+}
+
+/* ---------- Auth ---------- */
+
+#auth-view .ledger-card {
+  max-width: 380px;
+  margin: 3rem auto;
+}
+
+#auth-view h1 {
+  font-family: var(--font-signboard);
+  margin-top: 0;
+}
+
+#auth-view p.sub {
+  font-family: var(--font-ledger);
+  font-size: 0.85rem;
+  color: var(--rule);
+}
+
+.field {
+  margin-bottom: 0.9rem;
+}
+
+.field label {
+  display: block;
+  font-size: 0.82rem;
+  margin-bottom: 0.3rem;
+  color: var(--ink);
+  font-weight: bold;
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  background: var(--paper-white);
+  color: var(--ink);
+}
+
+.field input:focus,
+.field textarea:focus {
+  outline: 2px solid var(--teal);
+  outline-offset: 1px;
+}
+
+.btn-primary {
+  background: var(--marigold);
+  color: var(--ink);
+  border: none;
+  font-weight: 700;
+  padding: 0.65rem 1.1rem;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.btn-primary:hover {
+  filter: brightness(0.95);
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--teal);
+  text-decoration: underline;
+  padding: 0;
+  font-size: 0.85rem;
+}
+
+.auth-error {
+  color: var(--brick);
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+/* ---------- Entry view: the signature interaction ---------- */
+
+.entry-head h2 {
+  font-family: var(--font-signboard);
+  margin: 0 0 0.15rem;
+}
+
+.entry-sub {
+  font-family: var(--font-ledger);
+  font-size: 0.85rem;
+  color: #6b6152;
+  margin: 0 0 1rem;
+}
+
+.entry-input-row {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+}
+
+.entry-input-row textarea {
+  flex: 1;
+  min-height: 3.2rem;
+  resize: vertical;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  font-family: var(--font-ledger);
+  font-size: 1.05rem;
+  background: var(--paper-white);
+  color: var(--ink);
+}
+
+.entry-input-row textarea:focus {
+  outline: 2px solid var(--teal);
+}
+
+.mic-btn {
+  flex-shrink: 0;
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--paper-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mic-btn.recording {
+  background: var(--brick);
+  border-color: var(--brick);
+  animation: pulse 1.2s infinite;
+}
+
+.mic-btn svg {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(181, 70, 31, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(181, 70, 31, 0); }
+}
+
+.entry-view form {
+  margin-bottom: 0.9rem;
+}
+
+.stamp-btn {
+  margin-top: 0.8rem;
+  background: var(--teal);
+  color: var(--paper-white);
+  border: none;
+  font-weight: 700;
+  padding: 0.6rem 1.3rem;
+  border-radius: 6px;
+  font-family: var(--font-signboard);
+  letter-spacing: 0.03em;
+}
+
+/* A tally line "resolving" into a structured row — the one signature
+   moment the whole design is built around. */
+.tally-row {
+  font-family: var(--font-ledger);
+  border-top: 1px dashed var(--rule);
+  padding: 0.7rem 0.2rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  opacity: 0;
+  transform: translateY(6px) rotate(-0.4deg);
+  animation: settle 0.4s ease-out forwards;
+}
+
+@keyframes settle {
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+.tally-row .item {
+  font-weight: bold;
+}
+
+.tally-row .amount {
+  color: var(--teal);
+  font-weight: bold;
+}
+
+.tally-row .amount.estimated {
+  color: var(--brick);
+}
+
+.tally-row .estimated-flag {
+  font-size: 0.72rem;
+  color: var(--brick);
+  border: 1px solid var(--brick);
+  border-radius: 4px;
+  padding: 0 0.3rem;
+  margin-left: 0.35rem;
+}
+
+.entry-clarify,
+.entry-queue-note,
+.entry-duplicate {
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 6px;
+  font-size: 0.92rem;
+}
+
+.entry-clarify {
+  background: rgba(217, 142, 43, 0.14);
+  border: 1px solid var(--marigold);
+}
+
+.entry-queue-note {
+  background: rgba(46, 107, 94, 0.12);
+  border: 1px solid var(--teal);
+  font-family: var(--font-ledger);
+}
+
+.entry-duplicate {
+  background: rgba(181, 70, 31, 0.12);
+  border: 1px solid var(--brick);
+}
+
+.entry-clarify .clarify-actions,
+.entry-duplicate .dup-actions {
+  margin-top: 0.6rem;
+  display: flex;
+  gap: 0.6rem;
+}
+
+.btn-small {
+  border: 1px solid var(--ink);
+  background: var(--paper-white);
+  padding: 0.35rem 0.8rem;
+  border-radius: 5px;
+  font-size: 0.85rem;
+}
+
+.pending-list {
+  margin-top: 1rem;
+}
+
+.pending-item {
+  font-family: var(--font-ledger);
+  font-size: 0.85rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px dotted var(--rule);
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.pending-item .status-pending {
+  color: var(--teal);
+}
+
+.pending-item .status-failed {
+  color: var(--brick);
+}
+
+/* ---------- Ledger view ---------- */
+
+.filter-bar {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.filter-bar input {
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  font-family: var(--font-body);
+  background: var(--paper-white);
+}
+
+.filter-bar input[type="search"] {
+  flex: 1;
+  min-width: 160px;
+}
+
+.ledger-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-ledger);
+  font-size: 0.92rem;
+}
+
+.ledger-table th,
+.ledger-table td {
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.ledger-table th {
+  font-family: var(--font-signboard);
+  cursor: pointer;
+  user-select: none;
+  color: var(--ink);
+  background: var(--paper-deep);
+}
+
+.ledger-table th.sorted::after {
+  content: " \2193";
+}
+
+.ledger-table th.sorted.asc::after {
+  content: " \2191";
+}
+
+.ledger-table .est {
+  color: var(--brick);
+  font-size: 0.78rem;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 1rem;
+  font-size: 0.85rem;
+}
+
+.empty-state {
+  padding: 2rem 1rem;
+  text-align: center;
+  font-family: var(--font-ledger);
+  color: #6b6152;
+}
+
+/* ---------- Blueprint (analytics) view ---------- */
+
+.stat-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.8rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-tile {
+  background: var(--ink);
+  color: var(--paper-white);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+
+.stat-tile .label {
+  font-size: 0.75rem;
+  color: var(--marigold);
+  font-family: var(--font-ledger);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.stat-tile .value {
+  font-family: var(--font-signboard);
+  font-size: 1.6rem;
+  margin-top: 0.2rem;
+}
+
+.stat-tile .value.trend-up {
+  color: #7fd9a0;
+}
+
+.stat-tile .value.trend-down {
+  color: #f0a184;
+}
+
+.bucket-toggle {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.8rem;
+}
+
+.bucket-toggle button {
+  border: 1px solid var(--ink);
+  background: var(--paper-white);
+  padding: 0.3rem 0.8rem;
+  border-radius: 5px;
+  font-size: 0.85rem;
+}
+
+.bucket-toggle button.active {
+  background: var(--ink);
+  color: var(--paper-white);
+}
+
+.bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 160px;
+  border-bottom: 2px solid var(--ink);
+  padding-top: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.bar-chart .bar {
+  flex: 1;
+  background: var(--teal);
+  border-radius: 3px 3px 0 0;
+  min-height: 2px;
+  position: relative;
+}
+
+.bar-chart .bar:hover::after {
+  content: attr(data-label);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--paper-white);
+  font-size: 0.7rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.top-items-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem;
+}
+
+.top-items-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+  font-family: var(--font-ledger);
+  font-size: 0.9rem;
+}
+
+.top-items-list .bar-track {
+  flex: 1;
+  background: var(--paper-deep);
+  border-radius: 4px;
+  height: 10px;
+  overflow: hidden;
+}
+
+.top-items-list .bar-fill {
+  height: 100%;
+  background: var(--marigold);
+}
+
+.export-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+@media (max-width: 640px) {
+  main {
+    padding: 1rem 0.75rem 3rem;
+  }
+  .masthead {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

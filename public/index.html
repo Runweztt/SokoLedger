@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SokoLedger — your sales, in your own words</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="masthead">
+    <div>
+      <p class="wordmark">SokoLedger</p>
+      <p class="tagline">every sale, in your own words</p>
+    </div>
+    <nav id="main-nav" class="hidden">
+      <button data-view="entry" class="active">Log a sale</button>
+      <button data-view="ledger">Ledger</button>
+      <button data-view="blueprint">Financial blueprint</button>
+    </nav>
+    <div class="who hidden" id="who-box">
+      <span id="who-username"></span>
+      <button id="logout-btn">Log out</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Auth -->
+    <section id="auth-view" class="view active">
+      <div class="ledger-card">
+        <h1>Welcome back</h1>
+        <p class="sub">Your sales, your record — nobody else sees them.</p>
+        <form id="login-form">
+          <div class="field">
+            <label for="login-username">Username</label>
+            <input id="login-username" name="username" autocomplete="username" required />
+          </div>
+          <div class="field">
+            <label for="login-password">Password</label>
+            <input id="login-password" name="password" type="password" autocomplete="current-password" required />
+          </div>
+          <button type="submit" class="btn-primary">Log in</button>
+          <p class="auth-error hidden" id="login-error"></p>
+        </form>
+        <p style="margin-top:1rem">
+          New here?
+          <button type="button" class="btn-link" id="show-register">Create an account</button>
+        </p>
+      </div>
+
+      <div class="ledger-card hidden" id="register-card">
+        <h1>Start your ledger</h1>
+        <p class="sub">Pick a username and password — that's it.</p>
+        <form id="register-form">
+          <div class="field">
+            <label for="register-username">Username</label>
+            <input id="register-username" name="username" autocomplete="username" required minlength="3" />
+          </div>
+          <div class="field">
+            <label for="register-password">Password</label>
+            <input id="register-password" name="password" type="password" autocomplete="new-password" required minlength="8" />
+            <small>At least 8 characters.</small>
+          </div>
+          <button type="submit" class="btn-primary">Create account</button>
+          <p class="auth-error hidden" id="register-error"></p>
+        </form>
+        <p style="margin-top:1rem">
+          <button type="button" class="btn-link" id="show-login">Back to log in</button>
+        </p>
+      </div>
+    </section>
+
+    <!-- Entry: the signature interaction -->
+    <section id="entry-view" class="view">
+      <div class="ledger-card">
+        <div class="entry-head">
+          <h2>What did you sell?</h2>
+          <p class="entry-sub">Say it or type it, the way you'd tell a friend — "sold 10 eggs today by 12pm".</p>
+        </div>
+        <form id="entry-form">
+          <div class="entry-input-row">
+            <textarea id="entry-text" placeholder="e.g. 3 loaves this morning, 500 each" maxlength="500"></textarea>
+            <button type="button" id="mic-btn" class="mic-btn" aria-label="Speak your sale" title="Speak your sale">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z" />
+                <path d="M19 11a7 7 0 0 1-14 0M12 18v3" stroke-linecap="round" />
+              </svg>
+            </button>
+          </div>
+          <button type="submit" class="stamp-btn">Log it</button>
+        </form>
+        <p id="speech-unsupported-note" class="entry-sub hidden">Voice input isn't available in this browser — just type your sale above.</p>
+
+        <div id="entry-result"></div>
+        <div id="entry-clarify" class="entry-clarify hidden"></div>
+        <div id="entry-duplicate" class="entry-duplicate hidden"></div>
+        <div id="entry-queue-note" class="entry-queue-note hidden"></div>
+      </div>
+
+      <div class="ledger-card hidden" id="pending-card">
+        <h2 style="font-family:var(--font-signboard); margin-top:0;">Still working on these</h2>
+        <div class="pending-list" id="pending-list"></div>
+      </div>
+    </section>
+
+    <!-- Ledger -->
+    <section id="ledger-view" class="view">
+      <div class="ledger-card">
+        <div class="filter-bar">
+          <input type="search" id="ledger-search" placeholder="Search your sales..." />
+          <input type="text" id="ledger-item" placeholder="Filter by item" />
+          <input type="date" id="ledger-from" />
+          <input type="date" id="ledger-to" />
+        </div>
+        <table class="ledger-table">
+          <thead>
+            <tr>
+              <th data-sort="date" class="sorted">Date</th>
+              <th data-sort="item">Item</th>
+              <th>Qty</th>
+              <th>Unit price</th>
+              <th data-sort="amount">Total</th>
+            </tr>
+          </thead>
+          <tbody id="ledger-rows"></tbody>
+        </table>
+        <p class="empty-state hidden" id="ledger-empty">No sales logged yet — try saying what you sold on the "Log a sale" tab.</p>
+        <div class="pagination">
+          <button class="btn-small" id="ledger-prev">&larr; Prev</button>
+          <span id="ledger-page-label"></span>
+          <button class="btn-small" id="ledger-next">Next &rarr;</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Financial blueprint -->
+    <section id="blueprint-view" class="view">
+      <div class="ledger-card">
+        <div class="stat-tiles">
+          <div class="stat-tile">
+            <div class="label">Total revenue (period)</div>
+            <div class="value" id="stat-total">—</div>
+          </div>
+          <div class="stat-tile">
+            <div class="label">Average daily revenue</div>
+            <div class="value" id="stat-avg-daily">—</div>
+          </div>
+          <div class="stat-tile">
+            <div class="label">Month over month</div>
+            <div class="value" id="stat-mom">—</div>
+          </div>
+        </div>
+
+        <div class="bucket-toggle" id="bucket-toggle">
+          <button data-bucket="byDay" class="active">By day</button>
+          <button data-bucket="byWeek">By week</button>
+          <button data-bucket="byMonth">By month</button>
+        </div>
+        <div class="bar-chart" id="revenue-chart"></div>
+
+        <h2 style="font-family:var(--font-signboard)">Top-selling items</h2>
+        <ul class="top-items-list" id="top-items-list"></ul>
+        <p class="empty-state hidden" id="blueprint-empty">Nothing to show yet — log a few sales first and this will fill in.</p>
+
+        <h2 style="font-family:var(--font-signboard)">Hand this to a lender</h2>
+        <div class="export-actions">
+          <button class="btn-small" id="export-csv">Export CSV</button>
+          <button class="btn-small" id="export-pdf">Export PDF statement</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/speech.js"></script>
+  <script src="/js/entry.js"></script>
+  <script src="/js/ledger.js"></script>
+  <script src="/js/analytics.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+# systemd alternative to pm2 (ecosystem.config.js). Install as
+# /etc/systemd/system/sokoledger.service on web-01 and web-02, then:
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now sokoledger
+
+[Unit]
+Description=SokoLedger app server
+After=network.target
+
+[Service]
+Type=simple
+User=sokoledger
+WorkingDirectory=/opt/sokoledger/server
+EnvironmentFile=/opt/sokoledger/server/.env
+ExecStart=/usr/bin/node src/index.js
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
