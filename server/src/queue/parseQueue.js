@@ -32,7 +32,7 @@ async function listPending(userId) {
 // Claims exactly one due row across however many app instances are
 // polling concurrently. FOR UPDATE SKIP LOCKED means a second instance's
 // poll simply skips a row another instance already grabbed, instead of
-// blocking on it or double-processing it — this is what makes the queue
+// blocking on it or double-processing it. This is what makes the queue
 // safe with two stateless web servers sharing one Postgres.
 async function claimNextDue(client) {
   const result = await client.query(

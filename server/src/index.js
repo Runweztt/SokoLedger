@@ -32,8 +32,8 @@ app.use('/api', (req, res) => {
   res.status(404).json({ error: 'Not found' });
 });
 
-// Final safety net — a route handler throwing synchronously or a
-// withValidation-wrapped handler re-throwing a non-ValidationError lands
+// Final safety net. A route handler throwing synchronously, or a
+// withValidation-wrapped handler re-throwing a non-ValidationError, lands
 // here instead of crashing the process.
 app.use((err, req, res, next) => {
   console.error(err);

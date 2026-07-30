@@ -27,7 +27,7 @@ CREATE INDEX IF NOT EXISTS idx_sale_entries_user_occurred ON sale_entries (user_
 CREATE INDEX IF NOT EXISTS idx_sale_entries_user_item ON sale_entries (user_id, item);
 
 -- Durable queue for RapidAPI outages. Lives in Postgres (not in-process
--- memory) so either app server can pick up a retry — required since
+-- memory) so either app server can pick up a retry, required since
 -- web-01/web-02 are stateless and share no memory.
 CREATE TABLE IF NOT EXISTS parse_queue (
   id             SERIAL PRIMARY KEY,

@@ -2,8 +2,8 @@ const { averageUnitPrice } = require('../db/queries/sales');
 
 // Fills a missing unit_price from the trader's own sales history rather
 // than blocking the entry or guessing a market-wide number. The UI must
-// show this as "estimated" — it is a convenience for the ledger view, not
-// a fact the trader stated.
+// show this as "estimated", since it's a convenience for the ledger view,
+// not a fact the trader stated.
 async function resolveUnitPrice({ userId, item, unitPrice, totalAmount, quantity }) {
   if (unitPrice !== null && unitPrice !== undefined) {
     return { unitPrice, isEstimated: false };

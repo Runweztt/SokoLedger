@@ -1,0 +1,88 @@
+name: Test and deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm test
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        host:
+          - { name: web-01, ip: 44.201.123.60 }
+          - { name: web-02, ip: 18.233.154.155 }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          cat >> ~/.ssh/known_hosts <<'EOF'
+          44.201.123.60 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEcefJeIzCu59Bdva+T84cxR8Qg+RxRD6pf0Dw2w2Grg
+          18.233.154.155 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGX0pJcsj1Ij/1RM5nFtMZRNlx5U0fBT0s5LRnPtQeFx
+          EOF
+
+      - name: Ship code (rsync, .env untouched)
+        run: |
+          rsync -az --delete \
+            --exclude 'node_modules' \
+            --exclude '.env' \
+            --exclude '.git' \
+            --exclude '.github' \
+            -e "ssh -i ~/.ssh/deploy_key" \
+            ./ ubuntu@${{ matrix.host.ip }}:/opt/sokoledger/
+
+      - name: Install deps and reload
+        run: |
+          ssh -i ~/.ssh/deploy_key ubuntu@${{ matrix.host.ip }} '
+            set -e
+            cd /opt/sokoledger/server
+            npm ci --omit=dev
+            pm2 reload ecosystem.config.js --update-env
+            pm2 save
+            sleep 1
+            curl -sf http://localhost:3000/healthz
+          '
+
+  migrate:
+    needs: deploy
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          cat >> ~/.ssh/known_hosts <<'EOF'
+          44.201.123.60 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEcefJeIzCu59Bdva+T84cxR8Qg+RxRD6pf0Dw2w2Grg
+          EOF
+
+      - name: Apply schema (idempotent, shared Supabase DB, only needs to run once)
+        run: |
+          ssh -i ~/.ssh/deploy_key ubuntu@44.201.123.60 'cd /opt/sokoledger/server && npm run migrate'

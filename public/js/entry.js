@@ -38,7 +38,7 @@ const SokoEntry = (() => {
   }
 
   // Renders the minimal fallback form pre-filled with whatever partial
-  // data was extracted — never a blank form. Used for both the
+  // data was extracted, never a blank form. Used for both the
   // "couldn't understand you" path and completing a queue item that
   // eventually came back unparseable.
   function buildFallbackForm({ rawText, partial, onSubmit }) {
@@ -77,7 +77,7 @@ const SokoEntry = (() => {
       showDuplicateBanner(data, payload);
       return;
     }
-    // No price given and no history to estimate from — ask again rather
+    // No price given and no history to estimate from, so ask again rather
     // than inserting a sale with no revenue figure at all.
     if (data.status === 'clarify') {
       showClarify(data.question, payload, payload.rawText);

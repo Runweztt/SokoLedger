@@ -1,5 +1,6 @@
-const DEFAULT_RAPIDAPI_URL = 'https://open-ai21.p.rapidapi.com/conversationllama';
-// open-ai21 routinely takes 15-20s to respond (measured directly), so a
+const DEFAULT_RAPIDAPI_URL = 'https://chatgpt-42.p.rapidapi.com/conversationgpt4-2';
+// RapidAPI's free-tier GPT endpoints routinely take 15-20s to respond
+// (measured directly against open-ai21, the previous endpoint), so a
 // timeout much below that turns ordinary slow-but-successful calls into
 // unnecessary queue/retry cycles.
 const REQUEST_TIMEOUT_MS = 28000;
@@ -26,10 +27,11 @@ function buildPrompt(rawText, nowIso) {
   ].join('\n');
 }
 
-// Calls the RapidAPI open-ai21 conversation endpoint. Throws RemoteApiError
-// on anything that should be treated as "the API is unavailable right
-// now" (network failure, timeout, 5xx/429) so the caller can queue the
-// entry for retry instead of losing it. Any other thrown error is a bug.
+// Calls the RapidAPI conversational endpoint (see RAPIDAPI_URL). Throws
+// RemoteApiError on anything that should be treated as "the API is
+// unavailable right now" (network failure, timeout, 5xx/429) so the caller
+// can queue the entry for retry instead of losing it. Any other thrown
+// error is a bug.
 async function callRapidApi(rawText) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -45,6 +47,13 @@ async function callRapidApi(rawText) {
       },
       body: JSON.stringify({
         messages: [{ role: 'user', content: buildPrompt(rawText, new Date().toISOString()) }],
+        system_prompt: '',
+        // Low temperature: this task wants consistent, strict JSON back,
+        // not creative variation.
+        temperature: 0.2,
+        top_k: 5,
+        top_p: 0.9,
+        max_tokens: 300,
         web_access: false,
       }),
       signal: controller.signal,

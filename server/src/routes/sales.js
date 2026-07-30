@@ -26,7 +26,7 @@ router.post(
         await parseQueue.enqueue(req.userId, text);
         return res.status(202).json({
           status: 'queued',
-          message: "Saved — we'll finish processing it shortly.",
+          message: "Saved, we'll finish processing it shortly.",
         });
       }
       throw err;
@@ -38,7 +38,7 @@ router.post(
     if (parsed.kind === 'unparseable') {
       return res.json({
         status: 'unparseable',
-        message: "Couldn't quite understand that sale — fill in what's missing below.",
+        message: "Couldn't quite understand that sale, fill in what's missing below.",
         partial: null,
       });
     }
@@ -69,8 +69,8 @@ router.post(
   })
 );
 
-// Covers: the fallback form after an unparseable/clarify response, and
-// confirming a flagged duplicate (force: true) — one insert path shared
+// Covers the fallback form after an unparseable/clarify response, and
+// confirming a flagged duplicate (force: true). One insert path shared
 // with /parse so there is a single place price inference/duplicate logic
 // lives (see services/saleEntry.js).
 router.post(

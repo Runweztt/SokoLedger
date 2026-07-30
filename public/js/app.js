@@ -1,5 +1,5 @@
 // Boots the page: auth gate, then view switching between the three
-// screens. No client-side framework — plain DOM wiring.
+// screens. No client-side framework, just plain DOM wiring.
 (function () {
   function showAuthed() {
     document.getElementById('auth-view').classList.remove('active');

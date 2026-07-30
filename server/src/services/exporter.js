@@ -32,8 +32,8 @@ function money(n) {
 
 // A statement-style layout a loan officer can skim: identity + range up
 // top, headline numbers next, then the itemized entries. Built with
-// pdfkit's plain text/line primitives rather than a table library — the
-// row count per statement is small enough that manual column positions
+// pdfkit's plain text/line primitives rather than a table library, since
+// the row count per statement is small enough that manual column positions
 // are simpler than pulling in a grid component.
 function streamEntriesToPdf(res, { username, from, to, summary, rows }) {
   const doc = new PDFDocument({ margin: 50, size: 'A4' });

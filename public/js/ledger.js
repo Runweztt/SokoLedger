@@ -1,4 +1,4 @@
-// Sortable/filterable ledger table — backed by real query params against
+// Sortable/filterable ledger table, backed by real query params against
 // GET /api/sales, not a client-side filter over a preloaded array (the
 // trader's whole history won't fit in one page, and the backend already
 // does the filtering/sorting via the shared query layer).

@@ -1,6 +1,6 @@
-// pm2 process definition. Identical on web-01 and web-02 — the only
-// difference between the two hosts is their .env DATABASE_URL pointing
-// at the same shared Postgres instance.
+// pm2 process definition, identical on web-01 and web-02. Both hosts run
+// this unchanged; the only thing that varies is .env, and even that ends up
+// identical since both point at the same Supabase database.
 module.exports = {
   apps: [
     {

@@ -66,10 +66,10 @@ async function insertEntry({ userId, rawText, item, quantity, unitPrice, totalAm
   return result.rows[0];
 }
 
-// Rolling average unit price for this trader's own history of an item —
-// used to fill in a missing unit_price rather than leaving the sale
-// unrecorded. Only looks at entries where a real (non-estimated) price
-// was recorded, so estimates don't compound on estimates.
+// Rolling average unit price for this trader's own history of an item, used
+// to fill in a missing unit_price rather than leaving the sale unrecorded.
+// Only looks at entries where a real (non-estimated) price was recorded, so
+// estimates don't compound on estimates.
 async function averageUnitPrice(userId, item) {
   const result = await pool.query(
     `SELECT avg(unit_price)::numeric AS avg_price, count(*)::int AS sample_size
@@ -102,7 +102,7 @@ async function findRecentDuplicate(userId, item, quantity, totalAmount, windowMi
 
 const VALID_BUCKETS = new Set(['day', 'week', 'month']);
 
-// Unpaginated — used by CSV/PDF export where a trader needs their whole
+// Unpaginated, used by CSV/PDF export where a trader needs their whole
 // history, not one page of it. Kept separate from listEntries so the
 // LIMIT/OFFSET cap on the ledger view stays enforced there.
 async function listAllEntries({ userId, from, to, item, q, sort = 'date', order = 'asc' }) {

@@ -1,5 +1,5 @@
 // Small fetch wrapper: attaches the JWT, normalizes error handling. No
-// framework, no build step — this file is loaded directly as a script.
+// framework, no build step, this file is loaded directly as a script.
 const SokoAPI = (() => {
   const TOKEN_KEY = 'sokoledger_token';
   const USERNAME_KEY = 'sokoledger_username';

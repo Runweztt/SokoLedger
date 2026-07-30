@@ -19,7 +19,7 @@ const parseLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => (req.userId ? String(req.userId) : req.ip),
-  message: { error: 'Slow down a little — too many sales submitted at once. Try again shortly.' },
+  message: { error: 'Slow down a little, too many sales submitted at once. Try again shortly.' },
 });
 
 module.exports = { authLimiter, parseLimiter };
