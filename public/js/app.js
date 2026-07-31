@@ -2,27 +2,32 @@
 // screens. No client-side framework, just plain DOM wiring.
 (function () {
   // The Home button lives in the masthead and stays visible on every
-  // screen, logged in or not; only the app-section buttons (Log a sale /
-  // Ledger / Financial blueprint) need a session to make sense.
-  function setAppNavVisible(visible) {
-    document.querySelectorAll('#main-nav button[data-view]').forEach((b) => b.classList.toggle('hidden', !visible));
+  // screen, logged in or not. The app-section buttons (Log a sale /
+  // Ledger / Financial blueprint) track whether you have a session, not
+  // which screen is currently showing, so that browsing to Home while
+  // logged in doesn't hide your way back into the app.
+  function refreshNav() {
+    const authed = Boolean(SokoAPI.getToken());
+    document.querySelectorAll('#main-nav button[data-view]').forEach((b) => b.classList.toggle('hidden', !authed));
+    document.getElementById('who-box').classList.toggle('hidden', !authed);
+    if (authed) document.getElementById('who-username').textContent = SokoAPI.getUsername() || '';
   }
 
   function showAuthed() {
     if (window.SokoHeroDemo) SokoHeroDemo.stop();
-    setAppNavVisible(true);
-    document.getElementById('who-box').classList.remove('hidden');
-    document.getElementById('who-username').textContent = SokoAPI.getUsername() || '';
+    refreshNav();
     switchView('entry');
     SokoEntry.startPendingPolling();
   }
 
+  // Home always means the landing page, logged in or not. If you're
+  // still signed in, the app nav stays visible (see refreshNav) so this
+  // never strands you, it's just a way to see the marketing page again.
   function showLanding() {
-    SokoEntry.stopPendingPolling();
+    if (!SokoAPI.getToken()) SokoEntry.stopPendingPolling();
     document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
     document.getElementById('landing-view').classList.add('active');
-    setAppNavVisible(false);
-    document.getElementById('who-box').classList.add('hidden');
+    refreshNav();
     if (window.SokoHeroDemo) SokoHeroDemo.init();
   }
 
@@ -33,7 +38,7 @@
     if (window.SokoHeroDemo) SokoHeroDemo.stop();
     document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
     document.getElementById('auth-view').classList.add('active');
-    setAppNavVisible(false);
+    document.querySelectorAll('#main-nav button[data-view]').forEach((b) => b.classList.add('hidden'));
     document.getElementById('who-box').classList.add('hidden');
     if (mode === 'register') {
       document.querySelector('#auth-view .ledger-card:not(#register-card)').classList.add('hidden');
@@ -63,25 +68,27 @@
     });
   }
 
-  // Logged in, "Home" means your ledger (the app you're actually using);
-  // logged out, it means the marketing landing page. Always landing on
-  // the marketing page for an already-signed-in trader would strand them
-  // behind a login form with no way back except logging in again.
-  function goHome() {
-    if (SokoAPI.getToken()) {
-      showAuthed();
-    } else {
-      showLanding();
-    }
-  }
-
   function bindLanding() {
-    document.getElementById('wordmark-btn').addEventListener('click', goHome);
-    document.getElementById('home-btn').addEventListener('click', goHome);
+    document.getElementById('wordmark-btn').addEventListener('click', showLanding);
+    document.getElementById('home-btn').addEventListener('click', showLanding);
     document.getElementById('landing-get-started').addEventListener('click', () => showAuth('register'));
     document.getElementById('landing-login').addEventListener('click', () => showAuth('login'));
     document.getElementById('auth-back-btn').addEventListener('click', showLanding);
     document.getElementById('auth-back-btn-2').addEventListener('click', showLanding);
+  }
+
+  function bindPasswordToggles() {
+    document.querySelectorAll('.password-toggle').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const input = document.getElementById(btn.dataset.target);
+        const showing = input.type === 'password';
+        input.type = showing ? 'text' : 'password';
+        btn.classList.toggle('showing', showing);
+        btn.setAttribute('aria-pressed', String(showing));
+        btn.setAttribute('aria-label', showing ? 'Hide password' : 'Show password');
+        btn.title = showing ? 'Hide password' : 'Show password';
+      });
+    });
   }
 
   function bindAuthForms() {
@@ -133,6 +140,7 @@
     bindNav();
     bindLanding();
     bindAuthForms();
+    bindPasswordToggles();
     SokoEntry.init();
     SokoLedger.bind();
     SokoAnalytics.bind();

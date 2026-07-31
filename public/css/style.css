@@ -221,6 +221,49 @@ main {
   outline-offset: 1px;
 }
 
+.password-field {
+  position: relative;
+}
+
+.password-field input {
+  padding-right: 2.6rem;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 2.6rem;
+  border: none;
+  background: none;
+  color: #6b6152;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.password-toggle:hover {
+  color: var(--ink);
+}
+
+.password-toggle svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.password-toggle .slash {
+  opacity: 0;
+}
+
+.password-toggle.showing .slash {
+  opacity: 1;
+}
+
+.password-toggle.showing {
+  color: var(--teal);
+}
+
 .btn-primary {
   background: var(--marigold);
   color: var(--ink);

@@ -87,7 +87,16 @@
           </div>
           <div class="field">
             <label for="login-password">Password</label>
-            <input id="login-password" name="password" type="password" autocomplete="current-password" required />
+            <div class="password-field">
+              <input id="login-password" name="password" type="password" autocomplete="current-password" required />
+              <button type="button" class="password-toggle" data-target="login-password" aria-label="Show password" aria-pressed="false" title="Show password">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" stroke-linejoin="round" />
+                  <circle cx="12" cy="12" r="3" />
+                  <line class="slash" x1="2" y1="2" x2="22" y2="22" stroke-linecap="round" />
+                </svg>
+              </button>
+            </div>
           </div>
           <button type="submit" class="btn-primary">Log in</button>
           <p class="auth-error hidden" id="login-error"></p>
@@ -109,7 +118,16 @@
           </div>
           <div class="field">
             <label for="register-password">Password</label>
-            <input id="register-password" name="password" type="password" autocomplete="new-password" required minlength="8" />
+            <div class="password-field">
+              <input id="register-password" name="password" type="password" autocomplete="new-password" required minlength="8" />
+              <button type="button" class="password-toggle" data-target="register-password" aria-label="Show password" aria-pressed="false" title="Show password">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" stroke-linejoin="round" />
+                  <circle cx="12" cy="12" r="3" />
+                  <line class="slash" x1="2" y1="2" x2="22" y2="22" stroke-linecap="round" />
+                </svg>
+              </button>
+            </div>
             <small>At least 8 characters.</small>
           </div>
           <button type="submit" class="btn-primary">Create account</button>
