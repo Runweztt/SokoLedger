@@ -5,9 +5,25 @@ shopkeepers, roadside sellers who currently keep no record of what they
 sell. A trader speaks or types a sale in their own words ("sold 10 eggs
 today by 12pm"); the backend turns that into a structured ledger entry.
 
+## Demo video
+
+[Add demo video link here]
+
 ## Live deployment
 
-**https://www.jargsai.tech** (also reachable at `https://jargsai.tech`).
+**App:** https://www.jargsai.tech (also reachable at `https://jargsai.tech`)
+
+**API base URL:** https://www.jargsai.tech/api (e.g. `https://www.jargsai.tech/api/auth/login`,
+`https://www.jargsai.tech/api/sales`; see `server/src/routes/` for the full route list)
+
+**AI parsing API used:** https://chatgpt-42.p.rapidapi.com/conversationgpt4-2
+(RapidAPI, `chatgpt-42` / MATA-G 2.1 AI, `server/src/services/parser.js`, called
+server-side only). This is two separate things people mix up: the browser's own
+built-in Web Speech API does the actual listening and turns your voice into
+text (`public/js/speech.js`, no server involved). Once that text exists, the
+backend sends it to the RapidAPI model above to turn "sold 10 eggs today by
+12pm" into `{item, quantity, price, date}`. So: browser does the hearing, the
+API above does the understanding.
 
 ## Local setup
 
@@ -79,6 +95,21 @@ same process.
                     Supabase (managed Postgres),
                     via its IPv4 session pooler
 ```
+
+**What each piece actually does:**
+
+- **`jargsai.tech` / `www.jargsai.tech`** is just a domain name. It doesn't
+  run anything, it's a DNS record pointing at lb-01's IP.
+- **lb-01** serves none of the app's content. Its only job is to receive
+  each request and forward it to whichever of web-01/web-02 is healthy,
+  alternating between them.
+- **web-01 and web-02** are where the actual work happens. Each one runs
+  the **entire** application independently, the full frontend and the full
+  API. They are not split by feature (it's not "web-01 handles login,
+  web-02 handles the ledger"), they're identical, interchangeable copies of
+  the whole app. Either one alone could serve every feature on its own.
+  Running two means if one goes down, lb-01 (via its `/healthz` checks)
+  routes all traffic to the other and the site stays up.
 
 Database is Supabase, not self-hosted on either app server. Use the
 **session pooler** connection string (Project Settings → Database →
@@ -222,6 +253,64 @@ Distinct backends seen: 2
 
 PASS: traffic is being split across 2 backend(s).
 ```
+
+## Security, validation & error handling
+
+Auth is bcrypt (12 rounds) plus stateless JWTs, 7-day expiry, checked by
+`requireAuth` on every `/api/sales/*` and `/api/analytics/*` route. There's no
+server-side session store; the token just has to verify against
+`SESSION_SECRET`, which is why that value has to be identical on web-01 and
+web-02. Every query in `db/queries/sales.js` filters on `user_id`, so one
+trader can never see or export another's ledger, and a missing/expired/bad
+token gets a `401` before any handler runs.
+
+`helmet()` sets the usual hardening headers, TLS terminates at haproxy with a
+real Let's Encrypt cert (see Architecture), and the Postgres connection uses
+TLS for any non-local host. Login/register is rate-limited (20 attempts per
+15 minutes per IP); sale submission has its own limit, keyed per user instead
+of per IP, since the point there is protecting the shared RapidAPI quota, not
+blocking brute force. Request bodies are capped at 20kb.
+
+Every database call goes through `pg`'s `$1, $2` placeholders, never string
+concatenation. The one spot where user input picks a column instead of a
+value, the ledger's `sort` param, goes through a hardcoded whitelist first
+(`SORT_COLUMNS` in `db/queries/sales.js`) so it can't turn into arbitrary SQL.
+
+Validation happens at three layers. `middleware/validate.js` type-checks and
+bounds every request body server-side, not just relying on the frontend's
+`minlength` (which a client can skip entirely). The database schema backs
+that up with `NOT NULL`, `UNIQUE`, `CHECK` constraints, and `ON DELETE
+CASCADE`. And the AI's response gets the same treatment as any other
+untrusted input: `services/parser.js` tries three JSON-extraction strategies
+against whatever RapidAPI returns, then type-coerces every field, and
+anything that doesn't resolve to a real item, quantity, and price, or comes
+back with confidence under 0.5, goes back to the trader to confirm instead of
+getting inserted as fact. On the frontend, anything rendered from user data
+goes through an `escapeHtml` helper (`entry.js`, `ledger.js`, `analytics.js`)
+so a sale entry can't carry HTML into the page.
+
+For errors, route handlers are wrapped in `withValidation`, so a bad request
+comes back as a specific `400`, not a stack trace, and anything unexpected
+falls through to a top-level handler that logs it and returns a plain `500`.
+The one dependency actually expected to fail sometimes is RapidAPI itself: a
+`RemoteApiError` is handled differently from "the AI answered but couldn't
+parse it". The former gets durably queued in Postgres and retried with
+backoff (5s up to 5min, 6 attempts, `FOR UPDATE SKIP LOCKED` so both web
+servers can poll it safely) instead of just losing the sale. Duplicate
+detection is a soft warning, "you logged this 10 minutes ago, again?", not a
+hard block, since a double-tap and a genuine repeat sale look the same to the
+backend.
+
+### Testing
+
+```bash
+cd server && npm test
+```
+
+Node's built-in test runner, three files: parsing/validation logic
+(`parser.test.js`), price estimation (`priceInference.test.js`), and SQL
+filter building (`queries.test.js`). CI runs this on every push to `main` and
+only deploys if it passes.
 
 ## Credits
 

@@ -8,6 +8,13 @@ const SokoEntry = (() => {
     return Number(n).toFixed(2);
   }
 
+  function confidenceChip(confidence) {
+    if (confidence === null || confidence === undefined) return '';
+    const pct = Math.round(confidence * 100);
+    const tier = confidence >= 0.8 ? 'high' : confidence >= 0.5 ? 'medium' : 'low';
+    return `<span class="confidence-chip ${tier}"><span class="spark"></span>heard ${pct}% clearly</span>`;
+  }
+
   function renderTallyRow(entry) {
     const row = document.createElement('div');
     row.className = 'tally-row';
@@ -17,10 +24,35 @@ const SokoEntry = (() => {
       <span class="${amountClass}">
         ${money(entry.total_amount)}
         ${entry.is_estimated ? '<span class="estimated-flag">estimated price</span>' : ''}
+        ${confidenceChip(entry.confidence)}
       </span>
     `;
     const container = document.getElementById('entry-result');
     container.prepend(row);
+  }
+
+  function setAiStatus(state, text) {
+    const el = document.getElementById('ai-status');
+    if (!el) return;
+    el.className = `ai-status${state ? ` state-${state}` : ''}`;
+    el.querySelector('.ai-status-text').textContent = text;
+  }
+
+  function showParsingGhost() {
+    const ghost = document.createElement('div');
+    ghost.className = 'parsing-ghost';
+    ghost.id = 'parsing-ghost';
+    ghost.innerHTML = `
+      <span class="ghost-bar item"></span>
+      <span class="ghost-bar amount"></span>
+    `;
+    document.getElementById('entry-result').prepend(ghost);
+    return ghost;
+  }
+
+  function removeParsingGhost() {
+    const ghost = document.getElementById('parsing-ghost');
+    if (ghost) ghost.remove();
   }
 
   function escapeHtml(str) {
@@ -133,11 +165,14 @@ const SokoEntry = (() => {
     clearBanners();
     if (data.status === 'inserted') {
       renderTallyRow(data.entry);
+      setAiStatus('done', 'Logged. Say the next one whenever you\'re ready');
       window.dispatchEvent(new CustomEvent('sokoledger:entry-added'));
     } else if (data.status === 'clarify') {
       showClarify(data.question, data.partial, rawText);
+      setAiStatus('error', 'Almost there, just needs one more detail');
     } else if (data.status === 'unparseable') {
       showClarify(data.message, null, rawText);
+      setAiStatus('error', 'Couldn\'t make sense of that one');
     } else if (data.status === 'duplicate') {
       showDuplicateBanner(data, {
         item: data.partial.item,
@@ -146,8 +181,10 @@ const SokoEntry = (() => {
         totalAmount: data.partial.totalAmount,
         rawText,
       });
+      setAiStatus(null, 'Looks like one you already logged');
     } else if (data.status === 'queued') {
       showQueued(data.message);
+      setAiStatus('thinking', 'Connection is slow, so this is queued and will finish in the background');
     }
   }
 
@@ -201,10 +238,16 @@ const SokoEntry = (() => {
     pendingPollTimer = setInterval(refreshPending, 8000);
   }
 
+  function stopPendingPolling() {
+    clearInterval(pendingPollTimer);
+    pendingPollTimer = null;
+  }
+
   function setupMic() {
     const micBtn = document.getElementById('mic-btn');
     const textarea = document.getElementById('entry-text');
     const unsupportedNote = document.getElementById('speech-unsupported-note');
+    const waveBars = document.querySelectorAll('#mic-waveform span');
 
     if (!SokoSpeech.isSupported()) {
       micBtn.classList.add('hidden');
@@ -213,32 +256,65 @@ const SokoEntry = (() => {
     }
 
     let recognizer = null;
+    let visualizer = null;
     let recording = false;
+    let heardSomething = false;
+
+    function paintLevel(level) {
+      waveBars.forEach((bar, i) => {
+        const jitter = 0.55 + Math.abs(Math.sin(Date.now() / 140 + i * 1.3)) * 0.6;
+        const pct = Math.max(15, Math.min(100, level * jitter * 100));
+        bar.style.height = `${pct}%`;
+      });
+    }
+
+    function stopRecording() {
+      recording = false;
+      micBtn.classList.remove('recording');
+      if (visualizer) visualizer.stop();
+      waveBars.forEach((bar) => (bar.style.height = '20%'));
+    }
 
     micBtn.addEventListener('click', () => {
       if (recording) {
         recognizer.stop();
         return;
       }
+      heardSomething = false;
       recognizer = SokoSpeech.createRecognizer({
         onInterim: (text) => {
+          heardSomething = true;
           textarea.value = text;
+          setAiStatus('listening', 'Listening…');
         },
         onFinal: (text) => {
+          heardSomething = true;
           textarea.value = text;
         },
         onEnd: () => {
-          recording = false;
-          micBtn.classList.remove('recording');
+          stopRecording();
+          if (heardSomething && textarea.value.trim()) {
+            setAiStatus('thinking', 'Got it, reading your words…');
+            document.getElementById('entry-form').requestSubmit();
+          } else {
+            setAiStatus(null, 'Ready when you are');
+          }
         },
         onError: () => {
-          recording = false;
-          micBtn.classList.remove('recording');
+          stopRecording();
+          setAiStatus('error', 'Didn\'t catch that, try again or type it');
         },
       });
       recognizer.start();
       recording = true;
       micBtn.classList.add('recording');
+      setAiStatus('listening', 'Listening…');
+
+      visualizer = SokoSpeech.createVisualizer({ onLevel: paintLevel });
+      visualizer.start().catch(() => {
+        // Mic-permission edge case: transcript still works without the
+        // visualizer, so fail silently rather than blocking dictation.
+      });
     });
   }
 
@@ -253,12 +329,17 @@ const SokoEntry = (() => {
 
       const submitBtn = form.querySelector('button[type="submit"]');
       submitBtn.disabled = true;
+      setAiStatus('thinking', 'Reading your words…');
+      showParsingGhost();
       try {
         const data = await SokoAPI.request('/api/sales/parse', { method: 'POST', body: { text } });
+        removeParsingGhost();
         await handleParseResponse(data, text);
         textarea.value = '';
       } catch (err) {
+        removeParsingGhost();
         clearBanners();
+        setAiStatus('error', 'Something went wrong logging that sale');
         const el = document.getElementById('entry-clarify');
         el.classList.remove('hidden');
         el.textContent = err.message || 'Something went wrong logging that sale.';
@@ -271,8 +352,7 @@ const SokoEntry = (() => {
   function init() {
     setupMic();
     setupForm();
-    startPendingPolling();
   }
 
-  return { init };
+  return { init, startPendingPolling, stopPendingPolling };
 })();

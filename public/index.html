@@ -8,14 +8,15 @@
 </head>
 <body>
   <header class="masthead">
-    <div>
-      <p class="wordmark">SokoLedger</p>
-      <p class="tagline">every sale, in your own words</p>
-    </div>
-    <nav id="main-nav" class="hidden">
-      <button data-view="entry" class="active">Log a sale</button>
-      <button data-view="ledger">Ledger</button>
-      <button data-view="blueprint">Financial blueprint</button>
+    <button type="button" id="wordmark-btn" class="wordmark-btn">
+      <span class="wordmark">SokoLedger</span>
+      <span class="tagline">every sale, in your own words</span>
+    </button>
+    <nav id="main-nav">
+      <button type="button" id="home-btn" class="home-btn">Home</button>
+      <button data-view="entry" class="active hidden" id="nav-entry-btn">Log a sale</button>
+      <button data-view="ledger" class="hidden" id="nav-ledger-btn">Ledger</button>
+      <button data-view="blueprint" class="hidden" id="nav-blueprint-btn">Financial blueprint</button>
     </nav>
     <div class="who hidden" id="who-box">
       <span id="who-username"></span>
@@ -24,9 +25,59 @@
   </header>
 
   <main>
+    <!-- Landing: what logged-out visitors see first -->
+    <section id="landing-view" class="view active">
+      <div class="hero">
+        <p class="hero-eyebrow"><span class="spark"></span>AI-read sales ledger</p>
+        <h1 class="hero-title">Say what you sold.<br />We'll do the bookkeeping.</h1>
+        <p class="hero-sub">
+          Built for market vendors, shopkeepers and roadside sellers who
+          keep no written record today. Speak or type a sale the way you'd
+          tell a friend. SokoLedger's AI turns it into a structured
+          ledger entry, no forms, no typing numbers into a spreadsheet.
+        </p>
+        <div class="hero-cta">
+          <button type="button" class="btn-primary" id="landing-get-started">Start your ledger</button>
+          <button type="button" class="btn-link" id="landing-login">I already have an account</button>
+        </div>
+      </div>
+
+      <div class="ledger-card hero-demo">
+        <p class="entry-sub" style="margin-bottom:0.6rem;">Here's the moment the whole app is built around:</p>
+        <p class="hero-demo-line" id="hero-demo-line">&ldquo;sold 10 eggs today by 12pm&rdquo;</p>
+        <div id="hero-demo-result"></div>
+      </div>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z" />
+            <path d="M19 11a7 7 0 0 1-14 0M12 18v3" stroke-linecap="round" />
+          </svg>
+          <h3>Speak or type it</h3>
+          <p>No app-specific phrasing to learn. Say a sale the way you'd tell a friend, in any order, with or without the price.</p>
+        </div>
+        <div class="feature-card">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2l2.2 6.6L21 11l-6.8 2.4L12 20l-2.2-6.6L3 11l6.8-2.4z" stroke-linejoin="round" />
+          </svg>
+          <h3>AI reads it</h3>
+          <p>A language model pulls out the item, quantity, price and date, asks you back only when it's genuinely unsure.</p>
+        </div>
+        <div class="feature-card">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 20V10M12 20V4M20 20v-7" stroke-linecap="round" />
+          </svg>
+          <h3>Your financial blueprint</h3>
+          <p>Every sale rolls up into a searchable ledger and revenue trends you can hand straight to a lender.</p>
+        </div>
+      </div>
+    </section>
+
     <!-- Auth -->
-    <section id="auth-view" class="view active">
+    <section id="auth-view" class="view">
       <div class="ledger-card">
+        <button type="button" class="btn-link auth-back" id="auth-back-btn">&larr; Back</button>
         <h1>Welcome back</h1>
         <p class="sub">Your sales, your record. Nobody else sees them.</p>
         <form id="login-form">
@@ -48,6 +99,7 @@
       </div>
 
       <div class="ledger-card hidden" id="register-card">
+        <button type="button" class="btn-link auth-back" id="auth-back-btn-2">&larr; Back</button>
         <h1>Start your ledger</h1>
         <p class="sub">Pick a username and password, that's it.</p>
         <form id="register-form">
@@ -80,12 +132,19 @@
           <div class="entry-input-row">
             <textarea id="entry-text" placeholder="e.g. 3 loaves this morning, 500 each" maxlength="500"></textarea>
             <button type="button" id="mic-btn" class="mic-btn" aria-label="Speak your sale" title="Speak your sale">
+              <span class="waveform" id="mic-waveform" aria-hidden="true">
+                <span></span><span></span><span></span><span></span><span></span>
+              </span>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z" />
                 <path d="M19 11a7 7 0 0 1-14 0M12 18v3" stroke-linecap="round" />
               </svg>
             </button>
           </div>
+          <p class="ai-status" id="ai-status" aria-live="polite">
+            <span class="ai-status-dot"></span>
+            <span class="ai-status-text">Ready when you are</span>
+          </p>
           <button type="submit" class="stamp-btn">Log it</button>
         </form>
         <p id="speech-unsupported-note" class="entry-sub hidden">Voice input isn't available in this browser, just type your sale above.</p>
@@ -135,9 +194,22 @@
     <!-- Financial blueprint -->
     <section id="blueprint-view" class="view">
       <div class="ledger-card">
+        <div class="blueprint-head">
+          <div>
+            <h2 class="blueprint-title">Financial blueprint</h2>
+            <p class="entry-sub">Your numbers, plainly, pulled straight from your ledger.</p>
+          </div>
+          <div class="period-toggle" id="period-toggle">
+            <button data-days="7">7d</button>
+            <button data-days="30" class="active">30d</button>
+            <button data-days="90">90d</button>
+            <button data-days="all">All time</button>
+          </div>
+        </div>
+
         <div class="stat-tiles">
           <div class="stat-tile">
-            <div class="label">Total revenue (period)</div>
+            <div class="label">Total revenue</div>
             <div class="value" id="stat-total">—</div>
           </div>
           <div class="stat-tile">
@@ -148,14 +220,22 @@
             <div class="label">Month over month</div>
             <div class="value" id="stat-mom">—</div>
           </div>
+          <div class="stat-tile">
+            <div class="label">Sales logged</div>
+            <div class="value" id="stat-count">—</div>
+          </div>
         </div>
 
-        <div class="bucket-toggle" id="bucket-toggle">
-          <button data-bucket="byDay" class="active">By day</button>
-          <button data-bucket="byWeek">By week</button>
-          <button data-bucket="byMonth">By month</button>
+        <div class="chart-head">
+          <div class="bucket-toggle" id="bucket-toggle">
+            <button data-bucket="byDay" class="active">By day</button>
+            <button data-bucket="byWeek">By week</button>
+            <button data-bucket="byMonth">By month</button>
+          </div>
+          <p class="chart-scale" id="chart-scale"></p>
         </div>
         <div class="bar-chart" id="revenue-chart"></div>
+        <p class="empty-state hidden" id="chart-empty">No sales in this period yet.</p>
 
         <h2 style="font-family:var(--font-signboard)">Top-selling items</h2>
         <ul class="top-items-list" id="top-items-list"></ul>
@@ -175,6 +255,7 @@
   <script src="/js/entry.js"></script>
   <script src="/js/ledger.js"></script>
   <script src="/js/analytics.js"></script>
+  <script src="/js/hero-demo.js"></script>
   <script src="/js/app.js"></script>
 </body>
 </html>

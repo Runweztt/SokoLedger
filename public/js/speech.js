@@ -43,5 +43,47 @@ const SokoSpeech = (() => {
     };
   }
 
-  return { isSupported, createRecognizer };
+  // Separate from the recognizer above on purpose: SpeechRecognition never
+  // exposes raw audio, so the only way to draw a real waveform (not a fake
+  // canned animation) is a second, silent getUserMedia stream feeding an
+  // AnalyserNode. Same-origin mic permission is shared, so this doesn't
+  // prompt the user twice.
+  function createVisualizer({ onLevel }) {
+    let audioCtx = null;
+    let stream = null;
+    let raf = null;
+
+    async function start() {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.75;
+      source.connect(analyser);
+
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      const tick = () => {
+        analyser.getByteFrequencyData(data);
+        let sum = 0;
+        for (let i = 0; i < data.length; i++) sum += data[i];
+        onLevel(Math.min(1, (sum / data.length / 255) * 3.2));
+        raf = requestAnimationFrame(tick);
+      };
+      tick();
+    }
+
+    function stop() {
+      if (raf) cancelAnimationFrame(raf);
+      raf = null;
+      if (stream) stream.getTracks().forEach((t) => t.stop());
+      if (audioCtx) audioCtx.close().catch(() => {});
+      stream = null;
+      audioCtx = null;
+    }
+
+    return { start, stop };
+  }
+
+  return { isSupported, createRecognizer, createVisualizer };
 })();

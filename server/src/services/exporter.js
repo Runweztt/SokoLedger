@@ -42,7 +42,7 @@ function streamEntriesToPdf(res, { username, from, to, summary, rows }) {
   doc.fontSize(20).text('SokoLedger Revenue Statement', { align: 'left' });
   doc.moveDown(0.2);
   doc.fontSize(10).fillColor('#555').text(`Trader: ${username}`);
-  doc.text(`Period: ${from ? new Date(from).toLocaleDateString() : 'all time'} — ${to ? new Date(to).toLocaleDateString() : 'present'}`);
+  doc.text(`Period: ${from ? new Date(from).toLocaleDateString() : 'all time'} to ${to ? new Date(to).toLocaleDateString() : 'present'}`);
   doc.fillColor('#000');
   doc.moveDown();
 

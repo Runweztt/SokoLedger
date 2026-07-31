@@ -1,19 +1,47 @@
 // Boots the page: auth gate, then view switching between the three
 // screens. No client-side framework, just plain DOM wiring.
 (function () {
+  // The Home button lives in the masthead and stays visible on every
+  // screen, logged in or not; only the app-section buttons (Log a sale /
+  // Ledger / Financial blueprint) need a session to make sense.
+  function setAppNavVisible(visible) {
+    document.querySelectorAll('#main-nav button[data-view]').forEach((b) => b.classList.toggle('hidden', !visible));
+  }
+
   function showAuthed() {
-    document.getElementById('auth-view').classList.remove('active');
-    document.getElementById('main-nav').classList.remove('hidden');
+    if (window.SokoHeroDemo) SokoHeroDemo.stop();
+    setAppNavVisible(true);
     document.getElementById('who-box').classList.remove('hidden');
     document.getElementById('who-username').textContent = SokoAPI.getUsername() || '';
     switchView('entry');
+    SokoEntry.startPendingPolling();
   }
 
-  function showAuth() {
+  function showLanding() {
+    SokoEntry.stopPendingPolling();
+    document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
+    document.getElementById('landing-view').classList.add('active');
+    setAppNavVisible(false);
+    document.getElementById('who-box').classList.add('hidden');
+    if (window.SokoHeroDemo) SokoHeroDemo.init();
+  }
+
+  // mode: 'login' | 'register', defaults to whichever card is already
+  // showing (or login, the first time in).
+  function showAuth(mode) {
+    SokoEntry.stopPendingPolling();
+    if (window.SokoHeroDemo) SokoHeroDemo.stop();
     document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
     document.getElementById('auth-view').classList.add('active');
-    document.getElementById('main-nav').classList.add('hidden');
+    setAppNavVisible(false);
     document.getElementById('who-box').classList.add('hidden');
+    if (mode === 'register') {
+      document.querySelector('#auth-view .ledger-card:not(#register-card)').classList.add('hidden');
+      document.getElementById('register-card').classList.remove('hidden');
+    } else if (mode === 'login') {
+      document.querySelector('#auth-view .ledger-card:not(#register-card)').classList.remove('hidden');
+      document.getElementById('register-card').classList.add('hidden');
+    }
   }
 
   function switchView(name) {
@@ -31,8 +59,29 @@
     });
     document.getElementById('logout-btn').addEventListener('click', () => {
       SokoAPI.clearSession();
-      showAuth();
+      showLanding();
     });
+  }
+
+  // Logged in, "Home" means your ledger (the app you're actually using);
+  // logged out, it means the marketing landing page. Always landing on
+  // the marketing page for an already-signed-in trader would strand them
+  // behind a login form with no way back except logging in again.
+  function goHome() {
+    if (SokoAPI.getToken()) {
+      showAuthed();
+    } else {
+      showLanding();
+    }
+  }
+
+  function bindLanding() {
+    document.getElementById('wordmark-btn').addEventListener('click', goHome);
+    document.getElementById('home-btn').addEventListener('click', goHome);
+    document.getElementById('landing-get-started').addEventListener('click', () => showAuth('register'));
+    document.getElementById('landing-login').addEventListener('click', () => showAuth('login'));
+    document.getElementById('auth-back-btn').addEventListener('click', showLanding);
+    document.getElementById('auth-back-btn-2').addEventListener('click', showLanding);
   }
 
   function bindAuthForms() {
@@ -78,10 +127,11 @@
     });
   }
 
-  window.addEventListener('sokoledger:unauthorized', showAuth);
+  window.addEventListener('sokoledger:unauthorized', () => showAuth('login'));
 
   document.addEventListener('DOMContentLoaded', () => {
     bindNav();
+    bindLanding();
     bindAuthForms();
     SokoEntry.init();
     SokoLedger.bind();
@@ -90,7 +140,7 @@
     if (SokoAPI.getToken()) {
       showAuthed();
     } else {
-      showAuth();
+      showLanding();
     }
   });
 })();
