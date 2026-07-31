@@ -328,7 +328,9 @@ const SokoEntry = (() => {
       if (text.length < 2) return;
 
       const submitBtn = form.querySelector('button[type="submit"]');
+      const originalLabel = submitBtn.textContent;
       submitBtn.disabled = true;
+      submitBtn.textContent = 'Logging…';
       setAiStatus('thinking', 'Reading your words…');
       showParsingGhost();
       try {
@@ -345,6 +347,7 @@ const SokoEntry = (() => {
         el.textContent = err.message || 'Something went wrong logging that sale.';
       } finally {
         submitBtn.disabled = false;
+        submitBtn.textContent = originalLabel;
       }
     });
   }

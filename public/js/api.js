@@ -29,17 +29,36 @@ const SokoAPI = (() => {
     }
   }
 
-  async function request(path, { method = 'GET', body } = {}) {
+  // Generous enough to cover a slow-but-working AI parse (the backend's own
+  // RapidAPI timeout is 28s, see server/src/services/parser.js) without ever
+  // leaving a button stuck disabled forever if the network actually hangs.
+  const DEFAULT_TIMEOUT_MS = 40000;
+
+  async function request(path, { method = 'GET', body, timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
     const headers = {};
     const token = getToken();
     if (token) headers.Authorization = `Bearer ${token}`;
     if (body !== undefined) headers['Content-Type'] = 'application/json';
 
-    const response = await fetch(path, {
-      method,
-      headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    let response;
+    try {
+      response = await fetch(path, {
+        method,
+        headers,
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+        signal: controller.signal,
+      });
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        throw new ApiError('That took too long. Check your connection and try again.', 0);
+      }
+      throw new ApiError('Could not reach the server. Check your connection and try again.', 0);
+    } finally {
+      clearTimeout(timeout);
+    }
 
     if (response.status === 401) {
       clearSession();

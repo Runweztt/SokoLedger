@@ -515,7 +515,7 @@ main {
   50% { box-shadow: 0 0 0 8px rgba(181, 70, 31, 0); }
 }
 
-/* ---------- AI status line: the "the model is working" narration ---------- */
+/* ---------- AI status line: "the model is working" narration ---------- */
 
 .ai-status {
   display: flex;
@@ -617,6 +617,19 @@ main {
   border-radius: 6px;
   font-family: var(--font-signboard);
   letter-spacing: 0.03em;
+}
+
+/* The RapidAPI call this button kicks off routinely takes 15-20s (see
+   parser.js), so "disabled" alone reads as frozen, not busy. Make the
+   in-flight state impossible to miss. */
+.stamp-btn:disabled {
+  cursor: not-allowed;
+  animation: stamp-busy 1.1s ease-in-out infinite;
+}
+
+@keyframes stamp-busy {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
 }
 
 /* A tally line "resolving" into a structured row: the one signature
