@@ -196,6 +196,9 @@ const SokoEntry = (() => {
     row.innerHTML = `<span>"${escapeHtml(item.raw_text)}"</span><span class="${statusClass}">${escapeHtml(statusLabel)}</span>`;
 
     if (item.status === 'failed') {
+      const actions = document.createElement('div');
+      actions.className = 'pending-actions';
+
       const fixBtn = document.createElement('button');
       fixBtn.className = 'btn-small';
       fixBtn.textContent = 'Finish this entry';
@@ -210,9 +213,20 @@ const SokoEntry = (() => {
           },
         });
         row.appendChild(form);
-        fixBtn.remove();
+        actions.remove();
       });
-      row.appendChild(fixBtn);
+
+      const discardBtn = document.createElement('button');
+      discardBtn.className = 'btn-small btn-discard';
+      discardBtn.textContent = 'Discard';
+      discardBtn.title = "Wasn't a real sale, remove it without logging anything";
+      discardBtn.addEventListener('click', async () => {
+        await SokoAPI.request(`/api/sales/pending/${item.id}`, { method: 'DELETE' });
+        refreshPending();
+      });
+
+      actions.append(fixBtn, discardBtn);
+      row.appendChild(actions);
     }
     return row;
   }
