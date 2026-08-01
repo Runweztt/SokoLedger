@@ -7,7 +7,7 @@ today by 12pm"); the backend turns that into a structured ledger entry.
 
 ## Demo video
 
-[Add demo video link here]
+[https://youtu.be/G9eDlpBg-BU]
 
 ## Live deployment
 
